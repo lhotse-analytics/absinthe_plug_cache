@@ -1,4 +1,4 @@
-# Absinthe.Plug
+# AbsinthePlugCache.Plug
 
 [![Build Status](https://github.com/absinthe-graphql/absinthe_plug/workflows/CI/badge.svg)](https://github.com/absinthe-graphql/absinthe_plug/actions?query=workflow%3ACI)
 [![Version](https://img.shields.io/hexpm/v/absinthe_plug.svg)](https://hex.pm/packages/absinthe_plug)
@@ -22,9 +22,9 @@ def deps do
 end
 ```
 
-Note: Absinthe.Plug requires Elixir 1.10 or higher.
+Note: AbsinthePlugCache.Plug requires Elixir 1.10 or higher.
 
-`Absinthe.Plug` also requires a JSON codec. `Jason` and `Poison` work out of the box.
+`AbsinthePlugCache.Plug` also requires a JSON codec. `Jason` and `Poison` work out of the box.
 
 ```elixir
 def deps do
@@ -46,7 +46,7 @@ You may want to look for the specific upgrade guide in the [Absinthe documentati
 
 See "Usage," below, for basic usage information and links to specific resources.
 
-- [Absinthe.Plug hexdocs](https://hexdocs.pm/absinthe_plug).
+- [AbsinthePlugCache.Plug hexdocs](https://hexdocs.pm/absinthe_plug_cache).
 - For the tutorial, guides, and general information about Absinthe-related
   projects, see [http://absinthe-graphql.org](http://absinthe-graphql.org).
 
@@ -60,29 +60,29 @@ In your `MyAppWeb.Router` module add:
 
 ```elixir
 plug Plug.Parsers,
-  parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+  parsers: [:urlencoded, :multipart, :json, AbsinthePlugCache.Plug.Parser],
   pass: ["*/*"],
   json_decoder: Jason
 
-plug Absinthe.Plug,
+plug AbsinthePlugCache.Plug,
   schema: MyAppWeb.Schema
 ```
 
-If you want `Absinthe.Plug` to serve only a particular route, configure your
+If you want `AbsinthePlugCache.Plug` to serve only a particular route, configure your
 `MyAppWeb.Router` like:
 
 ```elixir
 plug Plug.Parsers,
-  parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+  parsers: [:urlencoded, :multipart, :json, AbsinthePlugCache.Plug.Parser],
   pass: ["*/*"],
   json_decoder: Jason
 
 forward "/api",
-  to: Absinthe.Plug,
+  to: AbsinthePlugCache.Plug,
   init_opts: [schema: MyAppWeb.Schema]
 ```
 
-For more information, see the API documentation for `Absinthe.Plug`.
+For more information, see the API documentation for `AbsinthePlugCache.Plug`.
 
 ### Phoenix.Router
 
@@ -92,7 +92,7 @@ If you are using [Phoenix.Router](https://hexdocs.pm/phoenix/Phoenix.Router.html
 
 ```elixir
 forward "/graphiql",
-  to: Absinthe.Plug.GraphiQL,
+  to: AbsinthePlugCache.Plug.GraphiQL,
   init_opts: [
     schema: MyAppWeb.Schema,
     interface: :simple
@@ -103,7 +103,7 @@ forward "/graphiql",
 
 ```elixir
 forward "/graphiql",
-  Absinthe.Plug.GraphiQL,
+  AbsinthePlugCache.Plug.GraphiQL,
   schema: MyAppWeb.Schema,
   interface: :simple
 ```
@@ -114,15 +114,15 @@ For more information see [Phoenix.Router.forward/4](https://hexdocs.pm/phoenix/P
 ## GraphiQL
 
 To add support for a GraphiQL interface, add a configuration for
-`Absinthe.Plug.GraphiQL`:
+`AbsinthePlugCache.Plug.GraphiQL`:
 
 ```elixir
 forward "/graphiql",
-  to: Absinthe.Plug.GraphiQL,
+  to: AbsinthePlugCache.Plug.GraphiQL,
   init_opts: [schema: MyAppWeb.Schema]
 ```
 
-See the API documentation for `Absinthe.Plug.GraphiQL` for more information.
+See the API documentation for `AbsinthePlugCache.Plug.GraphiQL` for more information.
 
 ## Community
 

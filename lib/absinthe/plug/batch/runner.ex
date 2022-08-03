@@ -1,7 +1,7 @@
-defmodule Absinthe.Plug.Batch.Runner do
+defmodule AbsinthePlugCache.Plug.Batch.Runner do
   @moduledoc false
 
-  alias Absinthe.Plug.Request
+  alias AbsinthePlugCache.Plug.Request
 
   def run(queries, conn, conn_info, config) do
     queries = build_pipelines(queries, conn_info, config)
@@ -18,7 +18,7 @@ defmodule Absinthe.Plug.Batch.Runner do
     invalid_results = build_invalid_results(invalid_queries)
 
     bps = restore_order(valid_results, invalid_results)
-    conn = Absinthe.Plug.apply_before_send(conn, bps, config)
+    conn = AbsinthePlugCache.Plug.apply_before_send(conn, bps, config)
     results = for bp <- bps, do: bp.result
     {conn, results}
   end

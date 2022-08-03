@@ -1,10 +1,10 @@
-defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Remove do
+defmodule Mix.Tasks.AbsinthePlugCache.Plug.Graphiql.Assets.Remove do
   use Mix.Task
 
   @shortdoc "Removes GraphiQL assets"
 
   def run(args) do
-    opts = Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
+    opts = Mix.AbsinthePlugCache.Plug.GraphiQL.AssetsTask.run(args)
     destroy_directory(opts[:local_directory])
   end
 

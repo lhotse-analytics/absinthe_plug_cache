@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.DocumentProvider do
+defmodule AbsinthePlugCache.Plug.DocumentProvider do
   @moduledoc """
   A document provider is a module that, given a GraphQL query, determines
   what document should be executed and how the configured pipeline should be
@@ -7,20 +7,20 @@ defmodule Absinthe.Plug.DocumentProvider do
   ## Configuring
 
   Configuration of your document providers occurs on initialization of
-  `Absinthe.Plug`; see that module's documentation of the `:document_providers`
+  `AbsinthePlugCache.Plug`; see that module's documentation of the `:document_providers`
   option for more details.
 
   ## Making Your Own
 
-  `Absinthe.Plug.DocumentProvider` is a behaviour, and any module that
+  `AbsinthePlugCache.Plug.DocumentProvider` is a behaviour, and any module that
   implements its callbacks can function as a document provider for
-  `Absinthe.Plug`.
+  `AbsinthePlugCache.Plug`.
 
   See the documentation for the behaviour callbacks and the implementation of
   the document providers that are defined in this package for more information.
 
-  - `Absinthe.Plug.DocumentProvider.Default`
-  - `Absinthe.Plug.DocumentProvider.Compiled`
+  - `AbsinthePlugCache.Plug.DocumentProvider.Default`
+  - `AbsinthePlugCache.Plug.DocumentProvider.Compiled`
   """
 
   @typedoc """
@@ -35,35 +35,37 @@ defmodule Absinthe.Plug.DocumentProvider do
   When the request is not handled by this document provider (so processing should
   continue to the next one):
 
-      {:cont, Absinthe.Plug.Request.Query.t}
+      {:cont, AbsinthePlugCache.Plug.Request.Query.t}
 
   When the request has been processed by this document provider:
 
-      {:halt, Absinthe.Plug.Request.Query.t}
+      {:halt, AbsinthePlugCache.Plug.Request.Query.t}
 
   Note that if no document providers set the request `document`, no document execution
   will occur and an error will be returned to the client.
   """
   @type result ::
-          {:halt, Absinthe.Plug.Request.Query.t()} | {:cont, Absinthe.Plug.Request.Query.t()}
+          {:halt, AbsinthePlugCache.Plug.Request.Query.t()}
+          | {:cont, AbsinthePlugCache.Plug.Request.Query.t()}
 
   @doc """
   Given a request, determine what part of its configured pipeline
   should be applied during execution.
   """
-  @callback pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
+  @callback pipeline(AbsinthePlugCache.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
 
   @doc """
   Given a request, attempt to process it with this document provider.
 
   ## Return Types
 
-  See the documentation for the `Absinthe.Plug.DocumentProvider.result` type.
+  See the documentation for the `AbsinthePlugCache.Plug.DocumentProvider.result` type.
   """
-  @callback process(Absinthe.Plug.Request.Query.t(), Keyword.t()) :: result
+  @callback process(AbsinthePlugCache.Plug.Request.Query.t(), Keyword.t()) :: result
 
   @doc false
-  @spec process([t], Absinthe.Plug.Request.Query.t()) :: Absinthe.Plug.Request.Query.t()
+  @spec process([t], AbsinthePlugCache.Plug.Request.Query.t()) ::
+          AbsinthePlugCache.Plug.Request.Query.t()
   # Attempt to process an request through the given list of valid document providers
   def process(document_providers, query) do
     document_providers
@@ -80,7 +82,7 @@ defmodule Absinthe.Plug.DocumentProvider do
   end
 
   @doc false
-  @spec pipeline(Absinthe.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
+  @spec pipeline(AbsinthePlugCache.Plug.Request.Query.t()) :: Absinthe.Pipeline.t()
   # Determine the remaining pipeline for request, based on the associated
   # document provider.
   def pipeline(%{document_provider: {mod, _}} = request) do

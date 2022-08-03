@@ -1,15 +1,15 @@
-defmodule Mix.Tasks.Absinthe.Plug.Graphiql.Assets.Download do
+defmodule Mix.Tasks.AbsinthePlugCache.Plug.Graphiql.Assets.Download do
   use Mix.Task
 
   @shortdoc "Download GraphiQL assets"
 
   def run(args) do
-    Mix.Absinthe.Plug.GraphiQL.AssetsTask.run(args)
+    Mix.AbsinthePlugCache.Plug.GraphiQL.AssetsTask.run(args)
 
     {:ok, _} = Application.ensure_all_started(:inets)
     {:ok, _} = Application.ensure_all_started(:ssl)
 
-    Absinthe.Plug.GraphiQL.Assets.get_remote_asset_mappings()
+    AbsinthePlugCache.Plug.GraphiQL.Assets.get_remote_asset_mappings()
     |> Enum.map(&download_file/1)
   end
 

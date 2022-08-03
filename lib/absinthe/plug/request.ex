@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Request do
+defmodule AbsinthePlugCache.Plug.Request do
   @moduledoc false
 
   # This struct is the default return type of Request.parse.
@@ -10,14 +10,14 @@ defmodule Absinthe.Plug.Request do
   #             before sending it to the client
 
   import Plug.Conn
-  alias Absinthe.Plug.Request.Query
+  alias AbsinthePlugCache.Plug.Request.Query
 
   defstruct queries: [],
             batch: false,
             extra_keys: []
 
   @type t :: %__MODULE__{
-          queries: list(Absinthe.Plug.Request.Query.t()),
+          queries: list(AbsinthePlugCache.Plug.Request.Query.t()),
           batch: boolean(),
           extra_keys: list(map())
         }

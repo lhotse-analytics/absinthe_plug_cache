@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Parser do
+defmodule AbsinthePlugCache.Plug.Parser do
   @moduledoc """
   Extracts the GraphQL request body.
 
@@ -6,14 +6,14 @@ defmodule Absinthe.Plug.Parser do
 
   ## Examples
 
-  Should be used with `Plug.Parsers`, before `Absinthe.Plug`:
+  Should be used with `Plug.Parsers`, before `AbsinthePlugCache.Plug`:
 
       plug Plug.Parsers,
-        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        parsers: [:urlencoded, :multipart, :json, AbsinthePlugCache.Plug.Parser],
         pass: ["*/*"],
         json_decoder: Jason
 
-      plug Absinthe.Plug,
+      plug AbsinthePlugCache.Plug,
         schema: MyAppWeb.Schema
   """
 

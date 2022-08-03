@@ -1,4 +1,4 @@
-defmodule Absinthe.GraphiQL.Validation.NoSubscriptionOnHTTP do
+defmodule AbsinthePlugCache.GraphiQL.Validation.NoSubscriptionOnHTTP do
   @moduledoc false
 
   use Absinthe.Phase
@@ -8,9 +8,7 @@ defmodule Absinthe.GraphiQL.Validation.NoSubscriptionOnHTTP do
   def run(blueprint, _) do
     case Blueprint.current_operation(blueprint) do
       %{type: :subscription} ->
-        {:error,
-         {:http_method,
-          "Subscriptions cannot be run over HTTP. Please configure a websocket connection"}}
+        {:error, {:http_method, "Subscriptions cannot be run over HTTP. Please configure a websocket connection"}}
 
       _ ->
         {:ok, blueprint}

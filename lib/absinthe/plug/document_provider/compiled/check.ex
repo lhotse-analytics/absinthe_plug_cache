@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.DocumentProvider.Compiled.Check do
+defmodule AbsinthePlugCache.Plug.DocumentProvider.Compiled.Check do
   @moduledoc false
 
   alias Absinthe.{Blueprint, Phase}
@@ -38,7 +38,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled.Check do
   end
 
   defp format_errors(errors, id, module) do
-    Absinthe.Plug.DocumentProvider.Compiled.Writer.error_message(
+    AbsinthePlugCache.Plug.DocumentProvider.Compiled.Writer.error_message(
       id,
       module,
       Enum.map(errors, &format_error/1)

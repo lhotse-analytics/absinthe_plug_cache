@@ -1,11 +1,11 @@
-defmodule Absinthe.Plug.Mixfile do
+defmodule AbsinthePlugCache.Plug.Mixfile do
   use Mix.Project
 
   @version "1.5.8"
 
   def project do
     [
-      app: :absinthe_plug,
+      app: :absinthe_plug_cache,
       version: @version,
       elixir: "~> 1.10",
       build_embedded: Mix.env() == :prod,
@@ -13,14 +13,14 @@ defmodule Absinthe.Plug.Mixfile do
       elixirc_paths: elixirc_paths(Mix.env()),
       package: package(),
       source_url: "https://github.com/absinthe-graphql/absinthe_plug",
-      docs: [source_ref: "v#{@version}", main: "Absinthe.Plug"],
+      docs: [source_ref: "v#{@version}", main: "AbsinthePlugCache.Plug"],
       deps: deps()
     ]
   end
 
   defp package do
     [
-      description: "Plug support for Absinthe, the GraphQL toolkit for Elixir",
+      description: "Plug support for AbsinthePlugCache, the GraphQL toolkit for Elixir",
       files: ["lib", "mix.exs", "README*"],
       maintainers: ["Ben Wilson", "Bruce Williams"],
       licenses: ["MIT"],
@@ -45,7 +45,8 @@ defmodule Absinthe.Plug.Mixfile do
       {:absinthe, "~> 1.5"},
       {:plug, "~> 1.4"},
       {:jason, ">= 0.0.0", only: [:dev, :test]},
-      {:ex_doc, "~> 0.20", only: :dev}
+      {:ex_doc, "~> 0.20", only: :dev},
+      {:con_cache, ">= 0.14.0"}
     ]
   end
 end

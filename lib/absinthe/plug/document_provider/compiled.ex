@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.DocumentProvider.Compiled do
+defmodule AbsinthePlugCache.Plug.DocumentProvider.Compiled do
   @moduledoc """
 
   Provide pre-compiled documents for retrieval by request parameter key.
@@ -8,10 +8,10 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
 
   ### Examples
 
-  Define a new module and `use Absinthe.Plug.DocumentProvider.Compiled`:
+  Define a new module and `use AbsinthePlugCache.Plug.DocumentProvider.Compiled`:
 
       defmodule MyAppWeb.Schema.Documents do
-        use Absinthe.Plug.DocumentProvider.Compiled
+        use AbsinthePlugCache.Plug.DocumentProvider.Compiled
 
         # ... Configure here
 
@@ -40,16 +40,16 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
   By default, the request parameter that will be used to lookup documents is
   `"id"`. You can change this by passing a `:key_param` option to `use`, e.g.:
 
-      use Absinthe.Plug.DocumentProvider.Compiled, key_param: "lookup_key"
+      use AbsinthePlugCache.Plug.DocumentProvider.Compiled, key_param: "lookup_key"
 
   ## Configuring
 
-  You need to configure `Absinthe.Plug` to use any document providers that you create.
-  (Only `Absinthe.Plug.DocumentProviders.Default` is configured by default.)
+  You need to configure `AbsinthePlugCache.Plug` to use any document providers that you create.
+  (Only `AbsinthePlugCache.Plug.DocumentProviders.Default` is configured by default.)
 
   Make sure that a `Compiled` document provider is placed before the `Default` provider.
 
-  See the documentation on `Absinthe.Plug.init/1` for more details. Look for the
+  See the documentation on `AbsinthePlugCache.Plug.init/1` for more details. Look for the
   `:document_providers` option.
   """
 
@@ -57,7 +57,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled do
     key_param = Keyword.get(opts, :key_param, "id") |> to_string
 
     quote do
-      @behaviour Absinthe.Plug.DocumentProvider
+      @behaviour AbsinthePlugCache.Plug.DocumentProvider
 
       @before_compile {unquote(__MODULE__.Writer), :write}
       @absinthe_documents_to_compile %{}

@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Request.Query do
+defmodule AbsinthePlugCache.Plug.Request.Query do
   @moduledoc false
 
   # A struct containing, among a bunch of config params,
@@ -39,7 +39,7 @@ defmodule Absinthe.Plug.Request.Query do
           document: nil | String.t() | Absinthe.Blueprint.t(),
           document_provider_key: any,
           pipeline: Absinthe.Pipeline.t(),
-          document_provider: nil | Absinthe.Plug.DocumentProvider.t(),
+          document_provider: nil | AbsinthePlugCache.Plug.DocumentProvider.t(),
           params: map,
           adapter: Absinthe.Adapter.t(),
           context: map,
@@ -75,7 +75,7 @@ defmodule Absinthe.Plug.Request.Query do
 
     pipeline =
       %{query | pipeline: pipeline}
-      |> Absinthe.Plug.DocumentProvider.pipeline()
+      |> AbsinthePlugCache.Plug.DocumentProvider.pipeline()
 
     %{query | pipeline: pipeline}
   end
@@ -146,7 +146,7 @@ defmodule Absinthe.Plug.Request.Query do
   # DOCUMENT PROVIDERS
   #
 
-  @spec calculate_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t(), ...]
+  @spec calculate_document_providers(map) :: [AbsinthePlugCache.Plug.DocumentProvider.t(), ...]
   defp calculate_document_providers(%{document_providers: {module, fun}} = config)
        when is_atom(fun) do
     apply(module, fun, [config])
@@ -157,7 +157,7 @@ defmodule Absinthe.Plug.Request.Query do
   end
 
   @spec ensure_document_providers!([] | providers) :: providers | no_return
-        when providers: [Absinthe.Plug.DocumentProvider.t(), ...]
+        when providers: [AbsinthePlugCache.Plug.DocumentProvider.t(), ...]
   defp ensure_document_providers!([]) do
     raise "No document providers found to process request"
   end
@@ -170,7 +170,7 @@ defmodule Absinthe.Plug.Request.Query do
   defp provide_document(query, config) do
     calculate_document_providers(config)
     |> ensure_document_providers!()
-    |> Absinthe.Plug.DocumentProvider.process(query)
+    |> AbsinthePlugCache.Plug.DocumentProvider.process(query)
   end
 
   @spec to_pipeline_opts(t) :: Keyword.t()

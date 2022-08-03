@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.Validation.HTTPMethod do
+defmodule AbsinthePlugCache.Plug.Validation.HTTPMethod do
   @moduledoc false
 
   use Absinthe.Phase

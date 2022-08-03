@@ -1,8 +1,8 @@
-defmodule Absinthe.Plug.GraphiQL.Assets do
+defmodule AbsinthePlugCache.Plug.GraphiQL.Assets do
   @moduledoc """
   """
 
-  @config Application.get_env(:absinthe_plug, Absinthe.Plug.GraphiQL)
+  @config Application.get_env(:absinthe_plug, AbsinthePlugCache.Plug.GraphiQL)
   @default_config [
     source: :smart,
     local_url_path: "/absinthe_graphiql",
@@ -30,8 +30,7 @@ defmodule Absinthe.Plug.GraphiQL.Assets do
      [
        {"dist/fonts/glyphicons-halflings-regular.eot", "fonts/glyphicons-halflings-regular.eot"},
        {"dist/fonts/glyphicons-halflings-regular.ttf", "fonts/glyphicons-halflings-regular.ttf"},
-       {"dist/fonts/glyphicons-halflings-regular.woff2",
-        "fonts/glyphicons-halflings-regular.woff2"},
+       {"dist/fonts/glyphicons-halflings-regular.woff2", "fonts/glyphicons-halflings-regular.woff2"},
        {"dist/fonts/glyphicons-halflings-regular.svg", "fonts/glyphicons-halflings-regular.svg"},
        {"dist/css/bootstrap.min.css", "css/bootstrap.css"}
      ]},

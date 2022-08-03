@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug do
+defmodule AbsinthePlugCache.Plug do
   @moduledoc """
   A plug for using [Absinthe](https://hex.pm/packages/absinthe) (GraphQL).
 
@@ -7,36 +7,36 @@ defmodule Absinthe.Plug do
   In your router:
 
       plug Plug.Parsers,
-        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        parsers: [:urlencoded, :multipart, :json, AbsinthePlugCache.Plug.Parser],
         pass: ["*/*"],
         json_decoder: Jason
 
-      plug Absinthe.Plug,
+      plug AbsinthePlugCache.Plug,
         schema: MyAppWeb.Schema
 
-  If you want only `Absinthe.Plug` to serve a particular route, configure your
+  If you want only `AbsinthePlugCache.Plug` to serve a particular route, configure your
   router like:
 
       plug Plug.Parsers,
-        parsers: [:urlencoded, :multipart, :json, Absinthe.Plug.Parser],
+        parsers: [:urlencoded, :multipart, :json, AbsinthePlugCache.Plug.Parser],
         pass: ["*/*"],
         json_decoder: Jason
 
       forward "/api",
-        to: Absinthe.Plug,
+        to: AbsinthePlugCache.Plug,
         init_opts: [schema: MyAppWeb.Schema]
 
-  See the documentation on `Absinthe.Plug.init/1` and the `Absinthe.Plug.opts`
+  See the documentation on `AbsinthePlugCache.Plug.init/1` and the `AbsinthePlugCache.Plug.opts`
   type for information on the available options.
 
   To add support for a GraphiQL interface, add a configuration for
-  `Absinthe.Plug.GraphiQL`:
+  `AbsinthePlugCache.Plug.GraphiQL`:
 
       forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
+        to: AbsinthePlugCache.Plug.GraphiQL,
         init_opts: [schema: MyAppWeb.Schema]
 
-  For more information, see the API documentation for `Absinthe.Plug`.
+  For more information, see the API documentation for `AbsinthePlugCache.Plug`.
 
   ### Phoenix.Router
 
@@ -45,7 +45,7 @@ defmodule Absinthe.Plug do
   #### Plug.Router
 
       forward "/graphiql",
-        to: Absinthe.Plug.GraphiQL,
+        to: AbsinthePlugCache.Plug.GraphiQL,
         init_opts: [
           schema: MyAppWeb.Schema,
           interface: :simple
@@ -54,7 +54,7 @@ defmodule Absinthe.Plug do
   #### Phoenix.Router
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
+        AbsinthePlugCache.Plug.GraphiQL,
          schema: MyAppWeb.Schema,
          interface: :simple
 
@@ -66,7 +66,7 @@ defmodule Absinthe.Plug do
   but before values are sent to the client, use the `:before_send` option:
 
   ```
-  plug Absinthe.Plug,
+  plug AbsinthePlugCache.Plug,
     schema: MyApp.Schema,
     before_send: {__MODULE__, :absinthe_before_send}
 
@@ -108,11 +108,11 @@ defmodule Absinthe.Plug do
   This package includes additional types for use in Absinthe GraphQL schema and
   type modules.
 
-  See the documentation on `Absinthe.Plug.Types` for more information.
+  See the documentation on `AbsinthePlugCache.Plug.Types` for more information.
 
   ## More Information
 
-  For more on configuring `Absinthe.Plug` and how GraphQL requests are made,
+  For more on configuring `AbsinthePlugCache.Plug` and how GraphQL requests are made,
   see [the guide](https://hexdocs.pm/absinthe/plug-phoenix.html) at
   <http://absinthe-graphql.org>.
 
@@ -123,6 +123,8 @@ defmodule Absinthe.Plug do
   require Logger
 
   alias __MODULE__.Request
+
+  alias AbsinthePlugCache.Plug.Cache
 
   @init_options [
     :adapter,
@@ -153,8 +155,8 @@ defmodule Absinthe.Plug do
   - `:context` -- (Optional) Initial value for the Absinthe context, available to resolvers. (default: `%{}`).
   - `:no_query_message` -- (Optional) Message to return to the client if no query is provided (default: "No query document supplied").
   - `:json_codec` -- (Optional) A `module` or `{module, Keyword.t}` dictating which JSON codec should be used (default: `Jason`). The codec module should implement `encode!/2` (e.g., `module.encode!(body, opts)`).
-  - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{Absinthe.Plug, :default_pipeline}`).
-  - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{Absinthe.Plug, :default_document_providers}`, which configures `Absinthe.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `Absinthe.Plug.DocumentProvider` for more information about document providers, their role in processing requests, and how you can define and configure your own.
+  - `:pipeline` -- (Optional) `{module, atom}` reference to a 2-arity function that will be called to generate the processing pipeline. (default: `{AbsinthePlugCache.Plug, :default_pipeline}`).
+  - `:document_providers` -- (Optional) A `{module, atom}` reference to a 1-arity function that will be called to determine the document providers that will be used to process the request. (default: `{AbsinthePlugCache.Plug, :default_document_providers}`, which configures `AbsinthePlugCache.Plug.DocumentProvider.Default` as the lone document provider). A simple list of document providers can also be given. See `AbsinthePlugCache.Plug.DocumentProvider` for more information about document providers, their role in procesing requests, and how you can define and configure your own.
   - `:schema` -- (Required, if not handled by Mix.Config) The Absinthe schema to use. If a module name is not provided, `Application.get_env(:absinthe, :schema)` will be attempt to find one.
   - `:serializer` -- (Optional) Similar to `:json_codec` but allows the use of serialization formats other than JSON, like MessagePack or Erlang Term Format. Defaults to whatever is set in `:json_codec`.
   - `:content_type` -- (Optional) The content type of the response. Should probably be set if `:serializer` option is used. Defaults to `"application/json"`.
@@ -174,8 +176,8 @@ defmodule Absinthe.Plug do
           pipeline: {module, atom},
           no_query_message: String.t(),
           document_providers:
-            [Absinthe.Plug.DocumentProvider.t(), ...]
-            | Absinthe.Plug.DocumentProvider.t()
+            [AbsinthePlugCache.Plug.DocumentProvider.t(), ...]
+            | AbsinthePlugCache.Plug.DocumentProvider.t()
             | {module, atom},
           analyze_complexity: boolean,
           max_complexity: non_neg_integer | :infinity,
@@ -192,7 +194,7 @@ defmodule Absinthe.Plug do
 
   ## Options
 
-  See the documentation for the `Absinthe.Plug.opts` type for details on the available options.
+  See the documentation for the `AbsinthePlugCache.Plug.opts` type for details on the available options.
   """
   @spec init(opts :: opts) :: Plug.opts()
   def init(opts) do
@@ -203,8 +205,7 @@ defmodule Absinthe.Plug do
 
     pipeline = Keyword.get(opts, :pipeline, {__MODULE__, :default_pipeline})
 
-    document_providers =
-      Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
+    document_providers = Keyword.get(opts, :document_providers, {__MODULE__, :default_document_providers})
 
     json_codec =
       case Keyword.get(opts, :json_codec, Jason) do
@@ -287,36 +288,89 @@ defmodule Absinthe.Plug do
   @spec call(Plug.Conn.t(), map) :: Plug.Conn.t() | no_return
   def call(conn, config) do
     config = update_config(conn, config)
-    {conn, result} = conn |> execute(config)
 
-    case result do
-      {:input_error, msg} ->
-        conn
-        |> encode(400, error_result(msg), config)
+    conn
+    |> Cache.cache_type()
+    |> case do
+      "get" ->
+        params = Cache.get_params(conn.params, config.context.current_user.id)
 
-      {:ok, %{"subscribed" => topic}} ->
-        conn
-        |> subscribe(topic, config)
+        Cache.get(params)
+        |> case do
+          nil ->
+            {conn, result} = conn |> execute(config)
 
-      {:ok, %{data: _} = result} ->
-        conn
-        |> encode(200, result, config)
+            key = Cache.build_key(params)
 
-      {:ok, %{errors: _} = result} ->
-        conn
-        |> encode(200, result, config)
+            case result do
+              {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+              {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+              {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
+              {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+              {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
+              {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+              {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
+            end
 
-      {:ok, result} when is_list(result) ->
-        conn
-        |> encode(200, result, config)
+          {_key, cache} ->
+            conn |> encode_cached(200, cache, config)
+        end
 
-      {:error, {:http_method, text}, _} ->
-        conn
-        |> encode(405, error_result(text), config)
+      "invalidate" ->
+        params = Cache.get_params(conn.params, config.context.current_user.id)
 
-      {:error, error, _} when is_binary(error) ->
-        conn
-        |> encode(500, error_result(error), config)
+        Cache.get(params)
+        |> case do
+          nil ->
+            {conn, result} = conn |> execute(config)
+
+            key = Cache.build_key(params)
+
+            case result do
+              {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+              {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+              {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
+              {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+              {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
+              {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+              {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
+            end
+
+          {old_key, _cache} ->
+            switch = Cache.get_switch(old_key)
+
+            {conn, result} = conn |> execute(config)
+
+            key = Cache.build_key(params, switch)
+
+            return =
+              case result do
+                {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+                {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+                {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
+                {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+                {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
+                {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+                {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
+              end
+
+            Cache.invalidate_key(old_key)
+
+            return
+        end
+
+      nil ->
+        {conn, result} = conn |> execute(config)
+
+        case result do
+          {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+          {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+          {:ok, %{data: _} = result} -> conn |> encode(200, result, config)
+          {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+          {:ok, result} when is_list(result) -> conn |> encode(200, result, config)
+          {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+          {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
+        end
     end
   end
 
@@ -398,7 +452,7 @@ defmodule Absinthe.Plug do
 
   ## Examples
 
-      iex> Absinthe.Plug.put_options(conn, context: %{current_user: user})
+      iex> AbsinthePlugCache.Plug.put_options(conn, context: %{current_user: user})
       %Plug.Conn{}
   """
   @spec put_options(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
@@ -416,7 +470,7 @@ defmodule Absinthe.Plug do
 
   ## Examples
 
-      iex> Absinthe.Plug.assign_context(conn, current_user: user)
+      iex> AbsinthePlugCache.Plug.assign_context(conn, current_user: user)
       %Plug.Conn{}
   """
   @spec assign_context(Plug.Conn.t(), Keyword.t() | map) :: Plug.Conn.t()
@@ -507,7 +561,7 @@ defmodule Absinthe.Plug do
   @doc false
   def run_request(%{batch: true, queries: queries} = request, conn, conn_info, config) do
     Request.log(request, config.log_level)
-    {conn, results} = Absinthe.Plug.Batch.Runner.run(queries, conn, conn_info, config)
+    {conn, results} = AbsinthePlugCache.Plug.Batch.Runner.run(queries, conn, conn_info, config)
 
     results =
       results
@@ -530,8 +584,7 @@ defmodule Absinthe.Plug do
   end
 
   defp run_query(query, conn, conn_info, config) do
-    %{document: document, pipeline: pipeline} =
-      Request.Query.add_pipeline(query, conn_info, config)
+    %{document: document, pipeline: pipeline} = Request.Query.add_pipeline(query, conn_info, config)
 
     case Absinthe.Pipeline.run(document, pipeline) do
       {:ok, %{result: result} = bp, _} ->
@@ -551,7 +604,7 @@ defmodule Absinthe.Plug do
   The default pipeline used to process GraphQL documents.
 
   This consists of Absinthe's default pipeline (as returned by `Absinthe.Pipeline.for_document/1`),
-  with the `Absinthe.Plug.Validation.HTTPMethod` phase inserted to ensure that the correct
+  with the `AbsinthePlugCache.Plug.Validation.HTTPMethod` phase inserted to ensure that the correct
   HTTP verb is being used for the GraphQL operation type.
   """
   @spec default_pipeline(map, Keyword.t()) :: Absinthe.Pipeline.t()
@@ -561,7 +614,7 @@ defmodule Absinthe.Plug do
     |> Absinthe.Pipeline.insert_after(
       Absinthe.Phase.Document.CurrentOperation,
       [
-        {Absinthe.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
+        {AbsinthePlugCache.Plug.Validation.HTTPMethod, method: config.conn_private.http_method}
       ]
     )
   end
@@ -573,14 +626,14 @@ defmodule Absinthe.Plug do
   @doc """
   The default list of document providers that are enabled.
 
-  This consists of a single document provider, `Absinthe.Plug.DocumentProvider.Default`, which
+  This consists of a single document provider, `AbsinthePlugCache.Plug.DocumentProvider.Default`, which
   supports ad hoc GraphQL documents provided directly within the request.
 
-  For more information about document providers, see `Absinthe.Plug.DocumentProvider`.
+  For more information about document providers, see `AbsinthePlugCache.Plug.DocumentProvider`.
   """
-  @spec default_document_providers(map) :: [Absinthe.Plug.DocumentProvider.t()]
+  @spec default_document_providers(map) :: [AbsinthePlugCache.Plug.DocumentProvider.t()]
   def default_document_providers(_) do
-    [Absinthe.Plug.DocumentProvider.Default]
+    [AbsinthePlugCache.Plug.DocumentProvider.Default]
   end
 
   #
@@ -596,6 +649,31 @@ defmodule Absinthe.Plug do
     conn
     |> put_resp_content_type(content_type)
     |> send_resp(status, mod.encode!(body, opts))
+  end
+
+  @spec encode_and_cache(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map, binary) ::
+          Plug.Conn.t() | no_return
+  def encode_and_cache(
+        conn,
+        status,
+        body,
+        %{serializer: %{module: mod, opts: opts}, content_type: content_type},
+        key
+      ) do
+    encoded = mod.encode!(body, opts)
+    Cache.store(encoded, key)
+
+    conn
+    |> put_resp_content_type(content_type)
+    |> send_resp(status, encoded)
+  end
+
+  @spec encode_cached(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map) ::
+          Plug.Conn.t() | no_return
+  def encode_cached(conn, status, cached_body, %{content_type: content_type}) do
+    conn
+    |> put_resp_content_type(content_type)
+    |> send_resp(status, cached_body)
   end
 
   @doc false

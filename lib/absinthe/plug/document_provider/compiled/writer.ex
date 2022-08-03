@@ -1,4 +1,4 @@
-defmodule Absinthe.Plug.DocumentProvider.Compiled.Writer do
+defmodule AbsinthePlugCache.Plug.DocumentProvider.Compiled.Writer do
   @moduledoc false
 
   defmacro write(env) do
@@ -31,7 +31,7 @@ defmodule Absinthe.Plug.DocumentProvider.Compiled.Writer do
       pipeline =
         compilation_pipeline ++
           [
-            {Absinthe.Plug.DocumentProvider.Compiled.Check, id: id, module: env.module}
+            {AbsinthePlugCache.Plug.DocumentProvider.Compiled.Check, id: id, module: env.module}
           ]
 
       case Absinthe.Pipeline.run(document_text, pipeline) do

@@ -4,9 +4,8 @@ defmodule AbsinthePlugCache.Plug.Cache do
   @cache_name :graphql_cache
 
   @doc """
-  check if the request should be cached
+  get the params for the cache
   """
-
   def get_params(%{"query" => query, "variables" => variables}, current_user_id) do
     query = query |> String.split(["query", "("]) |> Enum.at(1) |> String.trim()
     variables = variables |> Map.drop(["cache"])
@@ -18,14 +17,21 @@ defmodule AbsinthePlugCache.Plug.Cache do
   check if the request should be cached or not or invalidated and cached again
   """
   def cache_type(%Plug.Conn{params: %{"variables" => %{"cache" => "get"}}}), do: "get"
-  def cache_type(%Plug.Conn{params: %{"variables" => %{"cache" => "invalidate"}}}), do: "invalidate"
+
+  def cache_type(%Plug.Conn{params: %{"variables" => %{"cache" => "invalidate"}}}),
+    do: "invalidate"
+
   def cache_type(_any), do: nil
 
   @doc """
   get cached json
   """
-  def get(params) do
-    params |> get_cache_entries() |> List.first()
+  def get(params, buffer \\ 0) do
+    params |> Map.merge(%{"buffer" => buffer}) |> get_cache_entries() |> List.first()
+  end
+
+  def get_by_key(key) do
+    ConCache.get(@cache_name, key)
   end
 
   defp get_cache_entries(params) do
@@ -33,9 +39,7 @@ defmodule AbsinthePlugCache.Plug.Cache do
     ConCache.ets(@cache_name)
     # get the contents of the cache
     |> :ets.tab2list()
-    |> Enum.map(fn {key, cached_value} ->
-      {key |> unhash(), cached_value}
-    end)
+    |> Enum.map(fn {key, cached_value} -> {key |> unhash(), cached_value} end)
     |> Enum.filter(fn {cached_args, _cached_value} -> params |> Enum.into([]) |> same_args?(cached_args) end)
     |> Enum.map(fn {cached_args, cached_value} ->
       key = cached_args |> hash()
@@ -53,7 +57,7 @@ defmodule AbsinthePlugCache.Plug.Cache do
   @doc """
   build cache key
   """
-  def build_key(params, switch \\ 0), do: params |> Map.merge(%{"switch" => switch}) |> hash()
+  def build_key(params, buffer), do: params |> Map.merge(%{"buffer" => buffer}) |> hash()
 
   @doc """
   put json into cache
@@ -94,11 +98,6 @@ defmodule AbsinthePlugCache.Plug.Cache do
       _entry -> false
     end
   end
-
-  def get_switch(key), do: key |> unhash() |> Map.get("switch") |> get_switch_value()
-
-  defp get_switch_value(0), do: 1
-  defp get_switch_value(1), do: 0
 
   defp hash(data), do: data |> :erlang.term_to_binary() |> Base.encode64()
   defp unhash(hash), do: hash |> Base.decode64!() |> :erlang.binary_to_term()

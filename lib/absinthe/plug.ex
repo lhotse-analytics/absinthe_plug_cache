@@ -297,23 +297,10 @@ defmodule AbsinthePlugCache.Plug do
 
         Cache.get(params)
         |> case do
-          nil ->
-            {conn, result} = conn |> execute(config)
-
-            key = Cache.build_key(params)
-
-            case result do
-              {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
-              {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
-              {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
-              {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
-              {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
-              {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
-              {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
-            end
-
-          {_key, cache} ->
-            conn |> encode_cached(200, cache, config)
+          # there is no cache set yet -> set it directly on buffer 0
+          nil -> build_new_cache_and_return(conn, params, config, 0)
+          # there is a cache on buffer 0 -> return cache
+          {_key, cache} -> conn |> return_cached(200, cache, config)
         end
 
       "invalidate" ->
@@ -321,42 +308,10 @@ defmodule AbsinthePlugCache.Plug do
 
         Cache.get(params)
         |> case do
-          nil ->
-            {conn, result} = conn |> execute(config)
-
-            key = Cache.build_key(params)
-
-            case result do
-              {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
-              {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
-              {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
-              {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
-              {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
-              {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
-              {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
-            end
-
-          {old_key, _cache} ->
-            switch = Cache.get_switch(old_key)
-
-            {conn, result} = conn |> execute(config)
-
-            key = Cache.build_key(params, switch)
-
-            return =
-              case result do
-                {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
-                {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
-                {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
-                {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
-                {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
-                {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
-                {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
-              end
-
-            Cache.invalidate_key(old_key)
-
-            return
+          # there is no cache at buffer 0 -> set it directly on buffer 0
+          nil -> build_new_cache_and_return(conn, params, config, 0)
+          # there is a cache on buffer 0 -> set new cache to buffer 1
+          {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1)
         end
 
       nil ->
@@ -371,6 +326,22 @@ defmodule AbsinthePlugCache.Plug do
           {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
           {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
         end
+    end
+  end
+
+  defp build_new_cache_and_return(conn, params, config, buffer) do
+    {conn, result} = conn |> execute(config)
+
+    key = Cache.build_key(params, buffer)
+
+    case result do
+      {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+      {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+      {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
+      {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+      {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
+      {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+      {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
     end
   end
 
@@ -668,9 +639,9 @@ defmodule AbsinthePlugCache.Plug do
     |> send_resp(status, encoded)
   end
 
-  @spec encode_cached(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map) ::
+  @spec return_cached(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map) ::
           Plug.Conn.t() | no_return
-  def encode_cached(conn, status, cached_body, %{content_type: content_type}) do
+  def return_cached(conn, status, cached_body, %{content_type: content_type}) do
     conn
     |> put_resp_content_type(content_type)
     |> send_resp(status, cached_body)

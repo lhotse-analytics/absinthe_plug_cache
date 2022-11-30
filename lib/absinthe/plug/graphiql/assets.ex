@@ -1,8 +1,8 @@
 defmodule AbsinthePlugCache.Plug.GraphiQL.Assets do
   @moduledoc """
   """
+  @config Application.compile_env(:absinthe_plug, AbsinthePlugCache.Plug.GraphiQL)
 
-  @config Application.get_env(:absinthe_plug, AbsinthePlugCache.Plug.GraphiQL)
   @default_config [
     source: :smart,
     local_url_path: "/absinthe_graphiql",

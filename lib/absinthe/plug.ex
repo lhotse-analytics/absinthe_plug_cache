@@ -293,43 +293,71 @@ defmodule AbsinthePlugCache.Plug do
     |> Cache.cache_type()
     |> case do
       "get" ->
-        params = Cache.get_params(conn.params, config.context.current_user.id)
-
-        Cache.get(params)
+        Redix.start_link(config.context.redis_url)
         |> case do
-          # there is no cache set yet -> set it directly on buffer 0
-          nil -> build_new_cache_and_return(conn, params, config, 0)
-          # there is a cache on buffer 0 -> return cache
-          {_key, cache} -> conn |> return_cached(200, cache, config)
+          {:ok, pid} -> pid
+          {:error, {:already_started, pid}} -> pid
+          _any -> nil
+        end
+        |> case do
+          nil ->
+            return_without_caching(conn, config)
+
+          redis_pid ->
+            params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
+
+            Cache.get(params, redis_pid)
+            |> case do
+              # there is no cache set yet -> set it directly on buffer 0
+              nil -> build_new_cache_and_return(conn, params, config, 0, redis_pid)
+              # there is a cache on buffer 0 -> return cache
+              {_key, cache} -> conn |> return_cached(200, cache, config)
+            end
         end
 
       "invalidate" ->
-        params = Cache.get_params(conn.params, config.context.current_user.id)
-
-        Cache.get(params)
+        Redix.start_link(config.context.redis_url)
         |> case do
-          # there is no cache at buffer 0 -> set it directly on buffer 0
-          nil -> build_new_cache_and_return(conn, params, config, 0)
-          # there is a cache on buffer 0 -> set new cache to buffer 1
-          {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1)
+          {:ok, pid} -> pid
+          {:error, {:already_started, pid}} -> pid
+          _any -> nil
+        end
+        |> case do
+          nil ->
+            return_without_caching(conn, config)
+
+          redis_pid ->
+            params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
+
+            Cache.get(params, redis_pid)
+            |> case do
+              # there is no cache at buffer 0 -> set it directly on buffer 0
+              nil -> build_new_cache_and_return(conn, params, config, 0, redis_pid)
+              # there is a cache on buffer 0 -> set new cache to buffer 1
+              {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1, redis_pid)
+            end
         end
 
-      nil ->
-        {conn, result} = conn |> execute(config)
-
-        case result do
-          {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
-          {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
-          {:ok, %{data: _} = result} -> conn |> encode(200, result, config)
-          {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
-          {:ok, result} when is_list(result) -> conn |> encode(200, result, config)
-          {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
-          {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
-        end
+      _any ->
+        return_without_caching(conn, config)
     end
   end
 
-  defp build_new_cache_and_return(conn, params, config, buffer) do
+  defp return_without_caching(conn, config) do
+    {conn, result} = conn |> execute(config)
+
+    case result do
+      {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
+      {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
+      {:ok, %{data: _} = result} -> conn |> encode(200, result, config)
+      {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
+      {:ok, result} when is_list(result) -> conn |> encode(200, result, config)
+      {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
+      {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
+    end
+  end
+
+  defp build_new_cache_and_return(conn, params, config, buffer, pid) do
     {conn, result} = conn |> execute(config)
 
     key = Cache.build_key(params, buffer)
@@ -337,9 +365,9 @@ defmodule AbsinthePlugCache.Plug do
     case result do
       {:input_error, msg} -> conn |> encode(400, error_result(msg), config)
       {:ok, %{"subscribed" => topic}} -> conn |> subscribe(topic, config)
-      {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key)
+      {:ok, %{data: _} = result} -> conn |> encode_and_cache(200, result, config, key, pid)
       {:ok, %{errors: _} = result} -> conn |> encode(200, result, config)
-      {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key)
+      {:ok, result} when is_list(result) -> conn |> encode_and_cache(200, result, config, key, pid)
       {:error, {:http_method, text}, _} -> conn |> encode(405, error_result(text), config)
       {:error, error, _} when is_binary(error) -> conn |> encode(500, error_result(error), config)
     end
@@ -622,17 +650,18 @@ defmodule AbsinthePlugCache.Plug do
     |> send_resp(status, mod.encode!(body, opts))
   end
 
-  @spec encode_and_cache(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map, binary) ::
+  @spec encode_and_cache(Plug.Conn.t(), 200 | 400 | 405 | 500, map | list, map, binary, any) ::
           Plug.Conn.t() | no_return
   def encode_and_cache(
         conn,
         status,
         body,
         %{serializer: %{module: mod, opts: opts}, content_type: content_type},
-        key
+        key,
+        pid
       ) do
     encoded = mod.encode!(body, opts)
-    Cache.store(encoded, key)
+    Cache.store(encoded, key, pid)
 
     conn
     |> put_resp_content_type(content_type)

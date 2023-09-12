@@ -46,7 +46,8 @@ defmodule AbsinthePlugCache.Plug.Mixfile do
       {:plug, "~> 1.4"},
       {:jason, ">= 0.0.0", only: [:dev, :test]},
       {:ex_doc, "~> 0.20", only: :dev},
-      {:con_cache, ">= 0.14.0"}
+      {:con_cache, ">= 0.14.0"},
+      {:redix, "~> 1.1"}
     ]
   end
 end

@@ -164,7 +164,7 @@ defmodule AbsinthePlugCache.Plug do
   - `:log_level` -- (Optional) Set the logger level for Absinthe Logger. Defaults to `:debug`.
   - `:pubsub` -- (Optional) Pub Sub module for Subscriptions.
   - `:analyze_complexity` -- (Optional) Set whether to calculate the complexity of incoming GraphQL queries.
-  - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document’s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
+  - `:max_complexity` -- (Optional) Set the maximum allowed complexity of the GraphQL query. If a document\342\200\231s calculated complexity exceeds the maximum, resolution will be skipped and an error will be returned in the result detailing the calculated and maximum complexities.
   - `:transport_batch_payload_key` -- (Optional) Set whether or not to nest Transport Batch request results in a `payload` key. Older clients expected this key to be present, but newer clients have dropped this pattern. (default: `true`)
 
   """
@@ -289,57 +289,79 @@ defmodule AbsinthePlugCache.Plug do
   def call(conn, config) do
     config = update_config(conn, config)
 
-    conn
-    |> Cache.cache_type()
+    redis_pid =
+      Redix.start_link(config.context.redis_url)
+      |> case do
+        {:ok, pid} -> pid
+        {:error, {:already_started, pid}} -> pid
+        _any -> nil
+      end
+
+    cache_type = conn |> Cache.cache_type()
+
+    caching(redis_pid, cache_type, conn, config)
+  end
+
+  # no caching
+  defp caching(_pid, cache_type, conn, config) when cache_type not in ["get", "invalidate"] do
+    return_without_caching(conn, config)
+  end
+
+  # fallback if redis is not available
+  defp caching(nil, "get", conn, config) do
+    params = Cache.get_params(conn.params, config.context.current_user.id)
+
+    Cache.get(params)
     |> case do
-      "get" ->
-        Redix.start_link(config.context.redis_url)
-        |> case do
-          {:ok, pid} -> pid
-          {:error, {:already_started, pid}} -> pid
-          _any -> nil
-        end
-        |> case do
-          nil ->
-            return_without_caching(conn, config)
+      # there is no cache set yet -> set it directly on buffer 0
+      nil -> build_new_cache_and_return(conn, params, config, 0, nil)
+      # there is a cache on buffer 0 -> return cache
+      {_key, cache} -> conn |> return_cached(200, cache, config)
+    end
+  end
 
-          redis_pid ->
-            params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
+  defp caching(nil, "invalidate", conn, config) do
+    params = Cache.get_params(conn.params, config.context.current_user.id)
 
-            Cache.get(params, redis_pid)
-            |> case do
-              # there is no cache set yet -> set it directly on buffer 0
-              nil -> build_new_cache_and_return(conn, params, config, 0, redis_pid)
-              # there is a cache on buffer 0 -> return cache
-              {_key, cache} -> conn |> return_cached(200, cache, config)
-            end
-        end
+    Cache.get(params)
+    |> case do
+      # there is no cache at buffer 0 -> set it directly on buffer 0
+      nil -> build_new_cache_and_return(conn, params, config, 0, nil)
+      # there is a cache on buffer 0 -> set new cache to buffer 1
+      {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1, nil)
+    end
+  end
 
-      "invalidate" ->
-        Redix.start_link(config.context.redis_url)
-        |> case do
-          {:ok, pid} -> pid
-          {:error, {:already_started, pid}} -> pid
-          _any -> nil
-        end
-        |> case do
-          nil ->
-            return_without_caching(conn, config)
+  # redis caching
+  defp caching(redis_pid, "get", conn, config) do
+    params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
 
-          redis_pid ->
-            params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
+    Cache.get(params, redis_pid)
+    |> case do
+      # there is no cache set yet -> set it directly on buffer 0
+      nil ->
+        build_new_cache_and_return(conn, params, config, 0, redis_pid)
 
-            Cache.get(params, redis_pid)
-            |> case do
-              # there is no cache at buffer 0 -> set it directly on buffer 0
-              nil -> build_new_cache_and_return(conn, params, config, 0, redis_pid)
-              # there is a cache on buffer 0 -> set new cache to buffer 1
-              {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1, redis_pid)
-            end
-        end
+      # if there was an issue building the cache -> fallback
+      {key, nil} ->
+        key |> Cache.invalidate_key(redis_pid)
+        build_new_cache_and_return(conn, params, config, 0, redis_pid)
 
-      _any ->
-        return_without_caching(conn, config)
+      # there is a cache on buffer 0 -> return cache
+      {_key, cache} ->
+        conn |> return_cached(200, cache, config)
+    end
+  end
+
+  defp caching(redis_pid, "invalidate", conn, config) do
+    params = Cache.get_params(conn.params, config.context.current_user.id, conn.host)
+
+    Cache.get(params, redis_pid)
+    |> case do
+      # there is no cache at buffer 0 -> set it directly on buffer 0
+      nil -> build_new_cache_and_return(conn, params, config, 0, redis_pid)
+      # there is a cache on buffer 0 -> set new cache to buffer 1
+      {_old_key, _cache} -> build_new_cache_and_return(conn, params, config, 1, redis_pid)
     end
   end
 

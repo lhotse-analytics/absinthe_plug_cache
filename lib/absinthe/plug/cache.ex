@@ -1,6 +1,8 @@
 defmodule AbsinthePlugCache.Plug.Cache do
   @moduledoc false
 
+  @cache_name :graphql_cache
+
   @doc """
   get the params for the cache
   """
@@ -28,20 +30,20 @@ defmodule AbsinthePlugCache.Plug.Cache do
     params |> Map.merge(%{"buffer" => buffer}) |> get_cache_entries(pid) |> List.first()
   end
 
+  def get_by_key(key, nil) do
+    ConCache.get(@cache_name, key)
+  end
+
   def get_by_key(key, pid) do
     Redix.command!(pid, ["GET", key])
   end
 
-  defp get_cache_entries(params, pid) do
-    # get all key value pairs
-    Redix.command(pid, ["KEYS", "*"])
-    |> case do
-      {:ok, keys} -> keys
-      _any -> []
-    end
-    |> Enum.map(fn key ->
-      {key |> unhash(), Redix.command!(pid, ["GET", key])}
-    end)
+  defp get_cache_entries(params, nil) do
+    # get the ets table of the cache
+    ConCache.ets(@cache_name)
+    # get the contents of the cache
+    |> :ets.tab2list()
+    |> Enum.map(fn {key, cached_value} -> {key |> unhash(), cached_value} end)
     |> Enum.filter(fn {cached_args, _cached_value} -> params |> Enum.into([]) |> same_args?(cached_args) end)
     |> Enum.map(fn {cached_args, cached_value} ->
       key = cached_args |> hash()
@@ -49,9 +51,18 @@ defmodule AbsinthePlugCache.Plug.Cache do
     end)
   end
 
+  defp get_cache_entries(params, pid) do
+    key = params |> hash()
+    [{key, Redix.command!(pid, ["GET", key])}]
+  end
+
   @doc """
   get the contents of the cache
   """
+  def get_cache(nil) do
+    ConCache.ets(@cache_name) |> :ets.tab2list()
+  end
+
   def get_cache(pid) do
     # get all key value pairs
     Redix.command(pid, ["KEYS", "*"])
@@ -72,6 +83,10 @@ defmodule AbsinthePlugCache.Plug.Cache do
   @doc """
   put json into cache
   """
+  def store(json, key, nil) do
+    ConCache.put(@cache_name, key, json)
+  end
+
   def store(json, key, pid) do
     Redix.command!(pid, ["SET", key, json])
   end
@@ -79,9 +94,14 @@ defmodule AbsinthePlugCache.Plug.Cache do
   @doc """
   Invalidate all cache entries for a query having these arguments
   """
+  def invalidate(params, nil) do
+    get_cache_entries(params, nil)
+    |> Enum.each(fn key -> ConCache.delete(@cache_name, key |> hash()) end)
+  end
+
   def invalidate(params, pid) do
     get_cache_entries(params, pid)
-    |> Enum.each(fn key -> Redix.command!(pid, ["DEL", key |> hash()]) end)
+    |> Enum.each(fn {key, _value} -> Redix.command!(pid, ["DEL", key]) end)
   end
 
   @doc """
@@ -95,6 +115,10 @@ defmodule AbsinthePlugCache.Plug.Cache do
       _any -> []
     end
     |> Enum.each(fn key -> Redix.command!(pid, ["DEL", key]) end)
+  end
+
+  def invalidate_key(key, nil) do
+    ConCache.delete(@cache_name, key)
   end
 
   def invalidate_key(key, pid) do
